@@ -1,0 +1,179 @@
+---
+main_topsize: 0.2 #percent coverage of the poster
+main_bottomsize: 0.1
+#ESSENTIALS
+title: '**Connection between life expectancy and the rate of childhood polio vaccination**'
+author:
+  - name: '**Katelyn Hollingsworth**'
+    main: true
+    email: kh4790a@american.edu
+affiliation:
+  - num: 1
+    address: School of International Service, American University
+
+main_findings:
+  - "Clear connection between life expectancy and childhood polio vaccination"
+output: 
+  posterdown::posterdown_betterport:
+    self_contained: true
+    pandoc_args: --mathjax
+    number_sections: false
+link-citations: true
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      tidy = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      out.width = "100%")
+options(knitr.table.format = "html") 
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(stargazer) # regression tables
+
+# load QOG data
+setwd('/Users/katelynhollingsworth/Documents/AU Docs/Data Analytics/data sets')
+who = read_csv('Life Expectancy Data.csv')
+who  = who %>% filter(Year == 2015)
+
+```
+
+# Introduction and Data
+
+Using Global Health Observatory (GHO) data repository under World Health Organization (WHO), I hypothesized that life expectancy would be longer in countries with higher rates of Polio immunization among 1 year olds. This dataset includes 183 observations of 22 variables. All data comes from the year 2015 and represent 183 of 193 countries initially mapped by the WHO. Data on 10 countries was omitted due to lack of information and difficulty of retrieving more data due to size of those countries such as Vanuatu, Tonga, Togo, Cabo Verde, etc.
+
+My expectation is that there will be a clear positive correlation between life expectancy and the rate of polio immunization among 1 year olds which is important given the implications for other countries and how it could affect public health priorities around the world.
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+
+Let's start with an overview of the variable **Life Expectancy**:
+
+```{r, echo = F}
+ggplot(who, aes(x = fct_reorder(Status, `Life expectancy`, .fun = 'median'), 
+                y = `Life expectancy`)) +
+  geom_boxplot() +
+  coord_flip() +
+  xlab("Development Status")
+```
+This boxplot shows the averages of life expectancy between Developed and Developing countries
+
+```{r, echo = F}
+who %>%
+  filter(!is.na(`Life expectancy`)) %>%
+  summarise(
+    n = sum(!is.na(`Life expectancy`)),
+    Avg = mean(`Life expectancy`, na.rm = T),
+    StdDev = sd(`Life expectancy`, na.rm = T),
+    min = min(`Life expectancy`, na.rm = T),
+    median = median(`Life expectancy`, na.rm = T),
+    max = max(`Life expectancy`, na.rm = T)
+  )%>%
+kbl(caption = "Life Expectancy", digits = 1L) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+\
+\
+```{r, echo = F}
+who %>%
+  select(-5:-22)%>%
+  filter(., `Life expectancy` == min(`Life expectancy`)) %>% slice(1)%>%
+    kbl(caption = "Country with the lowest life expectancy", digits = 1L) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+\
+\
+```{r, echo = F}
+who %>%
+  select(-5:-22)%>%
+  filter(., `Life expectancy` == max(`Life expectancy`)) %>% slice(1) %>%
+    kbl(caption = "Country with the highest life expectancy", digits = 1L) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+And now a bit about Polio immunizations among 1 years olds (in %)
+\
+
+
+```{r, echo = F}
+ggplot(who, aes(x = fct_reorder(Status, Polio, .fun = 'median'), 
+                y = Polio)) +
+  geom_boxplot() +
+  coord_flip() +
+  xlab("Development Status") +
+  ylab("Polio immunization rates")
+```
+We can see here that in the "Developed" countries, immunization rates are in the highest possible range, while "Developing" countries also have generally higher rates but we can see some serious outliers on the low end of the range.
+\
+\
+```{r, echo = F}
+who %>%
+  filter(!is.na(Polio)) %>%
+  summarise(
+    n = sum(!is.na(Polio)),
+    Avg = mean(Polio, na.rm = T),
+    StdDev = sd(Polio, na.rm = T),
+    min = min(Polio, na.rm = T),
+    median = median(Polio, na.rm = T),
+    max = max(Polio, na.rm = T)
+  )%>%
+kbl(caption = "Polio immunization rates among 1 year olds", digits = 1L) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+\
+
+# Analysis
+
+First,  a visual representation of the regression of immunization rates on life expectancy
+
+```{r, echo = F}
+ggplot(who, aes(y = Polio, x = `Life expectancy`)) +
+  geom_point(shape = 21) +
+  geom_smooth(method = 'lm', se = F) +
+  theme_minimal()
+```
+
+Followed by a multiple regression to test the relationship
+```{r reg, echo = F, results = 'asis'}
+mod1 = lm(`Life expectancy` ~ Polio, data = who)
+mod2 = lm(`Life expectancy` ~ Polio + BMI, data = who)
+mod3 = lm(`Life expectancy` ~ Polio + BMI + 
+           Status, data = who)
+
+stargazer::stargazer(mod1, mod2, mod3, type = 'html', keep.stat = 'n')
+ 
+```
+This output shows us that there is a continuous positive correlation between Polio immunizations and life expectancy as life expectancy does stay positive even when adding additional variables. However, the percent increases in immunizations is not the only variable effecting change in life expectancy. 
+\
+
+We can see that BMI increases also have a positive correlation with life expectancy. This is interesting but also possibly due to the fact that higher BMIs are typically found in countries with an overabundance of food and processed items that contribute to weight gain and are not as pervasive in developing countries.
+\
+
+We can also see that the addition of Status causes quite a bit more effect. This is also an unsurprising result. 
+\
+
+All of these results present in the 95% confidence interval with p values of less than 0.05 - with the exeption of Status.
+
